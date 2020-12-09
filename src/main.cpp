@@ -1,47 +1,67 @@
 #include <Arduino.h>
 #include "DHT.h"
 
-#define rowSize 3
-int rowPins[] = {5, 4, 14};
+#define MATRIX_SIZE_X 3
+int matrixPinsX[] = {5, 4, 14}; // High to be on
 
-#define collumSize 3
-int columnPins[] = {12, 15, 10};
+#define MATRIX_SIZE_Y 3
+int matrixPinsY[] = {12, 15, 10}; // Low to be on
 
-#define DHTPIN 2
-#define DHTTYPE DHT11
-DHT dht(DHTPIN, DHTTYPE);
+#define MATRIX_DELAY 1
+bool matrix[MATRIX_SIZE_X][MATRIX_SIZE_Y];
+
+#define DHT_PIN 2
+#define DHT_TYPE DHT11
+DHT dht(DHT_PIN, DHT_TYPE);
 float temperature;
 float humidity;
 float heatIndex;
 
-void setup() {
+void setUpLEDMatrix(){
 
+  for(int i = 0; i < MATRIX_SIZE_X; i++){
+    pinMode(matrixPinsX[i], OUTPUT);
+    digitalWrite(matrixPinsX[i], 0);
+  }
+
+  for(int i = 0; i < MATRIX_SIZE_Y; i++){
+    pinMode(matrixPinsY[i], OUTPUT);
+    digitalWrite(matrixPinsY[i], 0);
+  }
+
+  for(int i = 0; i < MATRIX_SIZE_X; i++){
+    for(int j = 0; j < MATRIX_SIZE_Y; j++){
+      matrix[i][j] = 0;
+    }
+  }
+
+  matrix[0][0] = 1;
+  matrix[1][1] = 1;
+  matrix[2][2] = 1;
+}
+
+void setup() {
   Serial.begin(115200);
 
-  for(int i = 0; i < rowSize; i++){
-    pinMode(rowPins[i], OUTPUT);
-  }
-  for(int i = 0; i < collumSize; i++){
-    pinMode(columnPins[i], OUTPUT);
-  }
+  setUpLEDMatrix();
 
   dht.begin();
 }
 
-void setAllLEDs(bool on){
 
-  for(int i = 0; i < rowSize; i++){
-    digitalWrite(rowPins[i], on); 
+void showMatrix(){
+  for(int i = 0; i < MATRIX_SIZE_X; i++){
+
+    for(int j = 0; j < MATRIX_SIZE_Y; j++){
+      digitalWrite(matrixPinsY[j], !matrix[i][j]);
+    }
+
+    digitalWrite(matrixPinsX[i], 1);
+    delay(MATRIX_DELAY);
+    digitalWrite(matrixPinsX[i], 0);
   }
-  for(int i = 0; i < collumSize; i++){
-    digitalWrite(columnPins[i], !on);
-  } 
 }
 
-void setLED(int r, int c, bool on){
-  digitalWrite(r, on);
-  digitalWrite(c, !on);
-}
 
 void readDHT(){
   temperature = dht.readTemperature();
@@ -61,21 +81,5 @@ void printDHT(){
 }
 
 void loop() {
-  setAllLEDs (0);
-  
-  for(int i = 0; i < rowSize; i++){
-
-    for(int j = 0; j < collumSize; j++){
-
-      setLED(rowPins[i], columnPins[j], 1);
-      delay(1000);
-      setLED(rowPins[i], columnPins[j], 0);
-      delay(1000);
-
-      readDHT();
-      printDHT();
-
-    }
-  }
-  
+  showMatrix();
 }
