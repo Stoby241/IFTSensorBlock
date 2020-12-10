@@ -24,6 +24,10 @@ float temperatureCSS;
 float CO2;
 float TVOC;
 
+//RCWL Pin D5
+#define RCWL_PIN 14
+bool movement;
+
 void setUpLEDMatrix(){
 
   for(int i = 0; i < MATRIX_SIZE_X; i++){
@@ -48,6 +52,7 @@ void setUpLEDMatrix(){
 }
 
 void setUpCSS(){
+
   if(!ccs.begin()){
     Serial.println("Failed to start sensor! Please check your wiring.");
     while(1);
@@ -59,6 +64,11 @@ void setUpCSS(){
   ccs.setTempOffset(temp -25.0);
 }
 
+void setUpRCWL(){
+  pinMode(RCWL_PIN, INPUT);
+  movement = 0;
+}
+
 void setup() {
   Serial.begin(9600);
 
@@ -67,6 +77,7 @@ void setup() {
   dht.begin();
 
   setUpCSS();
+  setUpRCWL();
 }
 
 
@@ -127,12 +138,25 @@ void printCSS(){
   Serial.print("ppb | ");
 }
 
+
+void readRCWL(){
+  movement = digitalRead(RCWL_PIN) == 1;
+}
+void printRCWL(){
+  Serial.print("Movement: ");
+  Serial.print(movement); 
+  Serial.print(" | ");
+}
+
+
 void loop() {
   readDHT();
   readCSS();
+  readRCWL();
 
   printDHT();
   printCSS();
+  printRCWL();
   Serial.print("\n");
-  delay(2000);
+  delay(1000);
 }
