@@ -2,16 +2,16 @@
 #include "DHT.h"
 #include "Adafruit_CCS811.h"
 
-// Matrix
-#define MATRIX_SIZE_X 3
-int matrixPinsX[] = {5, 4, 14}; // High to be on
-#define MATRIX_SIZE_Y 3
-int matrixPinsY[] = {12, 15, 10}; // Low to be on
-#define MATRIX_DELAY 1
+// Matrix Pins D0, D3, D4, D7, D8, TX, SD3, SD2
+#define MATRIX_SIZE_X 2
+int matrixPinsX[] = {2, 15}; // High to be on Pins D4, D7
+#define MATRIX_SIZE_Y 2
+int matrixPinsY[] = {10, 9}; // Low to be on Pins SD3, SD2
+#define MATRIX_DELAY 10
 bool matrix[MATRIX_SIZE_X][MATRIX_SIZE_Y];
 
-// DHT 11 Pin D4
-#define DHT_PIN 2
+// DHT 11 Pin D5
+#define DHT_PIN 14
 #define DHT_TYPE DHT11
 DHT dht(DHT_PIN, DHT_TYPE);
 float temperatureDHT;
@@ -24,15 +24,15 @@ float temperatureCSS;
 float CO2;
 float TVOC;
 
-//RCWL Pin D5
-#define RCWL_PIN 14
+//RCWL Pin D6
+#define RCWL_PIN 12
 bool movement;
 
 void setUpLEDMatrix(){
 
   for(int i = 0; i < MATRIX_SIZE_X; i++){
     pinMode(matrixPinsX[i], OUTPUT);
-    digitalWrite(matrixPinsX[i], 0);
+    //digitalWrite(matrixPinsX[i], 1);
   }
 
   for(int i = 0; i < MATRIX_SIZE_Y; i++){
@@ -41,14 +41,12 @@ void setUpLEDMatrix(){
   }
 
   for(int i = 0; i < MATRIX_SIZE_X; i++){
-    for(int j = 0; j < MATRIX_SIZE_Y; j++){
-      matrix[i][j] = 0;
-    }
+    //pinMode(matrixPinsX[i], OUTPUT);
+    digitalWrite(matrixPinsX[i], 1);
   }
-
-  matrix[0][0] = 1;
-  matrix[1][1] = 1;
-  matrix[2][2] = 1;
+  for(int j = 0; j < MATRIX_SIZE_Y; j++){
+    digitalWrite(matrixPinsY[j], 0);
+  }
 }
 
 void setUpCSS(){
@@ -72,12 +70,12 @@ void setUpRCWL(){
 void setup() {
   Serial.begin(9600);
 
-  //setUpLEDMatrix();
+  setUpLEDMatrix();
 
-  dht.begin();
+  //dht.begin();
 
-  setUpCSS();
-  setUpRCWL();
+  //setUpCSS();
+  //setUpRCWL();
 }
 
 
@@ -150,13 +148,15 @@ void printRCWL(){
 
 
 void loop() {
-  readDHT();
-  readCSS();
-  readRCWL();
+  //readDHT();
+  //readCSS();
+  //readRCWL();
 
-  printDHT();
-  printCSS();
-  printRCWL();
-  Serial.print("\n");
-  delay(1000);
+  //printDHT();
+  //printCSS();
+  //printRCWL();
+  //Serial.print("\n");
+  //delay(1000);
+
+  //showMatrix();
 }
