@@ -1,32 +1,35 @@
 #include <Arduino.h>
 #include "DHT.h"
 #include "Adafruit_CCS811.h"
+#include <Ticker.h>
+
+Ticker timer;
 
 // Matrix
-#define MATRIX_SIZE_X 3
-int matrixPinsX[] = {5, 4, 14}; // High to be on
-#define MATRIX_SIZE_Y 3
-int matrixPinsY[] = {12, 15, 10}; // Low to be on
+#define MATRIX_SIZE_X 4
+int matrixPinsX[] = {D6, D7, D8, 16}; // High to be on
+#define MATRIX_SIZE_Y 2
+int matrixPinsY[] = {10, 3}; // Low to be on
 #define MATRIX_DELAY 1
 bool matrix[MATRIX_SIZE_X][MATRIX_SIZE_Y];
 
 // DHT 11 Pin D4
-#define DHT_PIN 2
+#define DHT_PIN D4
 #define DHT_TYPE DHT11
 DHT dht(DHT_PIN, DHT_TYPE);
-float temperatureDHT;
-float humidity;
-float heatIndex;
+volatile float temperatureDHT;
+volatile float humidity;
+volatile float heatIndex;
 
 // CO2 Pins D1, D2
 Adafruit_CCS811 ccs;
-float temperatureCSS;
-float CO2;
-float TVOC;
+volatile float temperatureCSS;
+volatile float CO2;
+volatile float TVOC;
 
 //RCWL Pin D5
 #define RCWL_PIN 14
-bool movement;
+volatile bool movement;
 
 void setUpLEDMatrix(){
 
@@ -42,45 +45,10 @@ void setUpLEDMatrix(){
 
   for(int i = 0; i < MATRIX_SIZE_X; i++){
     for(int j = 0; j < MATRIX_SIZE_Y; j++){
-      matrix[i][j] = 0;
+      matrix[i][j] = 1;
     }
   }
-
-  matrix[0][0] = 1;
-  matrix[1][1] = 1;
-  matrix[2][2] = 1;
 }
-
-void setUpCSS(){
-
-  if(!ccs.begin()){
-    Serial.println("Failed to start sensor! Please check your wiring.");
-    while(1);
-  }
-
-  //calibrate temperature sensor
-  while(!ccs.available());
-  float temp = ccs.calculateTemperature();
-  ccs.setTempOffset(temp -25.0);
-}
-
-void setUpRCWL(){
-  pinMode(RCWL_PIN, INPUT);
-  movement = 0;
-}
-
-void setup() {
-  Serial.begin(9600);
-
-  //setUpLEDMatrix();
-
-  dht.begin();
-
-  setUpCSS();
-  setUpRCWL();
-}
-
-
 void showMatrix(){
   for(int i = 0; i < MATRIX_SIZE_X; i++){
 
@@ -94,7 +62,9 @@ void showMatrix(){
   }
 }
 
-
+void setUpDHT(){
+  dht.begin();
+}
 void readDHT(){
   temperatureDHT = dht.readTemperature();
   humidity = dht.readHumidity();
@@ -110,7 +80,18 @@ void printDHT(){
   Serial.print("°C | ");
 }
 
+void setUpCSS(){
 
+  if(!ccs.begin()){
+    Serial.println("Failed to start sensor! Please check your wiring.");
+    while(1);
+  }
+
+  //calibrate temperature sensor
+  while(!ccs.available());
+  float temp = ccs.calculateTemperature();
+  ccs.setTempOffset(temp -25.0);
+}
 void readCSS(){
   if(ccs.available()){
 
@@ -138,7 +119,10 @@ void printCSS(){
   Serial.print("ppb | ");
 }
 
-
+void setUpRCWL(){
+  pinMode(RCWL_PIN, INPUT);
+  movement = 0;
+}
 void readRCWL(){
   movement = digitalRead(RCWL_PIN) == 1;
 }
@@ -148,15 +132,41 @@ void printRCWL(){
   Serial.print(" | ");
 }
 
+// ISR to Fire when Timer is triggered
+void ICACHE_RAM_ATTR onTime() {
+  readDHT();
+  printDHT();
+
+  
+	// Re-Arm the timer as using TIM_SINGLE
+	timer1_write(2500000);//12us
+}
+
+void setup()
+{
+  Serial.begin(115200);
+  setUpLEDMatrix();
+  setUpDHT();
+  //setUpCSS();
+  setUpRCWL();
+
+	//Initialize Ticker every 0.5s
+	timer1_attachInterrupt(onTime); // Add ISR Function
+	timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+	/* Dividers:
+		TIM_DIV1 = 0,   //80MHz (80 ticks/us - 104857.588 us max)
+		TIM_DIV16 = 1,  //5MHz (5 ticks/us - 1677721.4 us max)
+		TIM_DIV256 = 3  //312.5Khz (1 tick = 3.2us - 26843542.4 us max)
+	Reloads:
+		TIM_SINGLE	0 //on interrupt routine you need to write a new value to start the timer again
+		TIM_LOOP	1 //on interrupt the counter will start with the same value again
+	*/
+	
+	// Arm the Timer for our 0.5s Interval
+	timer1_write(2500000); // 2500000 / 5 ticks per us from TIM_DIV16 == 500,000 us interval 
+
+}
 
 void loop() {
-  readDHT();
-  readCSS();
-  readRCWL();
-
-  printDHT();
-  printCSS();
-  printRCWL();
-  Serial.print("\n");
-  delay(1000);
+  showMatrix();
 }
