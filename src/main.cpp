@@ -24,15 +24,15 @@ float temperatureCSS;
 float CO2;
 float TVOC;
 
-//RCWL Pin D5
-#define RCWL_PIN 14
+//RCWL Pin D6
+#define RCWL_PIN 12
 bool movement;
 
 void setUpLEDMatrix(){
 
   for(int i = 0; i < MATRIX_SIZE_X; i++){
     pinMode(matrixPinsX[i], OUTPUT);
-    digitalWrite(matrixPinsX[i], 0);
+    //digitalWrite(matrixPinsX[i], 1);
   }
 
   for(int i = 0; i < MATRIX_SIZE_Y; i++){
